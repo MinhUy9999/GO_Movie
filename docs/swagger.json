@@ -1,0 +1,36 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "title": "Ticket Booking API",
+      "version": "1.0",
+      "description": "This is a sample API for a movie ticket booking system"
+    },
+    "paths": {
+      "/register": {
+        "post": {
+          "summary": "Register a new user",
+          "tags": ["Authentication"],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "user",
+              "description": "User registration details",
+              "required": true,
+              "schema": {
+                "$ref": "#/definitions/User"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            },
+            "400": {
+              "description": "Bad Request"
+            }
+          }
+        }
+      }
+    }
+  }
+  
