@@ -12,7 +12,7 @@ type User struct {
 	ID       int    `json:"id"`
 	Email    string `json:"email"`
 	Name     string `json:"name"`
-	Password string `json:"password"`
+	Password string `json:"password,omitempty"`
 	Phone    string `json:"phone"`
 	Role     string `json:"role"`   // Either "user" or "admin"
 	Gender   string `json:"gender"` // Male, Female, Other
@@ -20,7 +20,7 @@ type User struct {
 
 // Register a new user
 func RegisterUser(user User) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
@@ -33,14 +33,15 @@ func RegisterUser(user User) error {
 // Authenticate a user (login)
 func AuthenticateUser(email, password string) (User, bool, error) {
 	var user User
-	err := config.DB.QueryRow("SELECT id, email, password, role FROM users WHERE email = ?", email).Scan(&user.ID, &user.Email, &user.Password, &user.Role)
+	var hashedPassword string
+	err := config.DB.QueryRow("SELECT id, email, password, role FROM users WHERE email = ?", email).Scan(&user.ID, &user.Email, &hashedPassword, &user.Role)
 	if err == sql.ErrNoRows {
 		return user, false, errors.New("user not found")
 	} else if err != nil {
 		return user, false, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
 		return user, false, errors.New("incorrect password")
 	}
@@ -65,15 +66,35 @@ func GetUserByID(id int) (User, error) {
 
 // DeleteUser deletes a user by ID
 func DeleteUser(userID int) error {
-	_, err := config.DB.Exec("DELETE FROM users WHERE id = ?", userID)
-	return err
+	result, err := config.DB.Exec("DELETE FROM users WHERE id = ?", userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("user not found")
+	}
+	return nil
 }
 
 // UpdateUser updates user details in the database
 func UpdateUser(user User) error {
-	_, err := config.DB.Exec("UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?",
+	result, err := config.DB.Exec("UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?",
 		user.Name, user.Email, user.Phone, user.ID)
-	return err
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("user not found")
+	}
+	return nil
 }
 
 // GetAllUsers retrieves all users from the database
