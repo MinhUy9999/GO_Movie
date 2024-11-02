@@ -34,13 +34,15 @@ func RegisterUser(user User) error {
 func AuthenticateUser(email, password string) (User, bool, error) {
 	var user User
 	var hashedPassword string
-	err := config.DB.QueryRow("SELECT id, email, password, role FROM users WHERE email = ?", email).Scan(&user.ID, &user.Email, &hashedPassword, &user.Role)
+	err := config.DB.QueryRow("SELECT id, email, name, password, role FROM users WHERE email = ?", email).
+		Scan(&user.ID, &user.Email, &user.Name, &hashedPassword, &user.Role)
 	if err == sql.ErrNoRows {
 		return user, false, errors.New("user not found")
 	} else if err != nil {
 		return user, false, err
 	}
 
+	// Compare passwords
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
 		return user, false, errors.New("incorrect password")

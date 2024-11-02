@@ -83,14 +83,14 @@ func Login(c *gin.Context) {
 	}
 
 	// Generate token
-	token, err := utils.GenerateToken(uint(user.ID))
+	token, err := utils.GenerateToken(uint(user.ID), user.Role, user.Name)
 	if err != nil {
 		log.Printf("Error generating token: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{"token": token, "name": user.Name, "role": user.Role, "userID": user.ID})
 }
 
 func checkLoginAttempts(c *gin.Context, email string) (int, error) {
@@ -143,8 +143,6 @@ func resetLoginAttempts(c *gin.Context, email string) error {
 
 // UserProfile - accessible by any authenticated user (user or admin)
 func UserProfile(c *gin.Context) {
-	userID := c.GetInt("user_id")
-	role := c.GetString("role")
 
 	// Check token in Redis
 	redisClient := config.RedisClient
@@ -155,7 +153,7 @@ func UserProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "Welcome!", "user_id": userID, "role": role})
+	c.JSON(http.StatusOK, gin.H{"status": "Welcome!"})
 }
 
 // AdminDashboard - accessible only by admins

@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"time"
 
@@ -10,42 +10,50 @@ import (
 
 var secretKey = []byte(os.Getenv("JWT_SECRET"))
 
+// Claims struct now includes Name
 type Claims struct {
-	UserID int    `json:"user_id"`
+	UserID uint   `json:"user_id"`
 	Role   string `json:"role"`
+	Name   string `json:"name"` // Added Name field
 	jwt.RegisteredClaims
 }
 
-// Generate JWT Token
-func GenerateToken(userID uint) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
-		"iat":     time.Now().Unix(),
+// GenerateToken creates a new JWT token for a user
+func GenerateToken(userID uint, role string, name string) (string, error) {
+	claims := &Claims{
+		UserID: userID,
+		Role:   role,
+		Name:   name, // Include Name in claims
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
-		log.Printf("Error generating token: %v", err)
-		return "", err
+		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
-	log.Printf("Generated token: %s", tokenString)
 	return tokenString, nil
 }
 
-// Validate JWT Token
+// ValidateToken checks if a given token is valid and returns the claims
 func ValidateToken(tokenStr string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// Ensure the signing method is HMAC
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return secretKey, nil
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, jwt.ErrSignatureInvalid
+		return nil, fmt.Errorf("invalid token")
 	}
 
 	return claims, nil

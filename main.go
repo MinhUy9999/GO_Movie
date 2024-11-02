@@ -6,37 +6,51 @@ import (
 	_ "my-app/docs" // Import Swagger docs
 	"my-app/routes"
 
+	// Import the sockets package
+	"time"
+
 	"github.com/gin-contrib/cors"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// Connect to the database
+	// Kết nối đến cơ sở dữ liệu
 	config.ConnectDB()
 
-	// Connect to Redis
+	// Khởi tạo router
+	r := gin.Default()
+
+	// Cấu hình CORS tùy chỉnh
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"}, // URL của frontend
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
+		AllowCredentials: true, // Cho phép gửi cookie hoặc thông tin xác thực
+		MaxAge:           12 * time.Hour,
+	}))
+
+	// Thêm route để xử lý tất cả các yêu cầu OPTIONS
+	r.OPTIONS("/*cors", func(c *gin.Context) {
+		c.Status(204)
+	})
+	r.Static("/uploads", "./uploads") // Serve the uploads folder
+
+	// Thiết lập các route
+	routes.SetupRoutes(r)
+
+	// Kết nối đến Redis
 	err := config.ConnectRedis()
 	if err != nil {
 		log.Printf("Cảnh báo: Không thể kết nối đến Redis: %v", err)
-		// Tiếp tục với ứng dụng, nhưng không có chức năng Redis
 	} else {
 		defer config.RedisClient.Close()
 		log.Println("Kết nối thành công đến Redis")
 	}
 
-	// Set up routes
-	r := routes.SetupRoutes()
-
-	// Add Swagger documentation route
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	// Use CORS middleware
-	r.Use(cors.Default())
-
-	// Start server on port 8080
-	log.Println("Starting server on :8080")
+	// Khởi động server trên cổng 8080
+	log.Println("Khởi động server trên cổng :8080")
 	if err := r.Run(":8080"); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Fatalf("Không thể khởi động server: %v", err)
 	}
 }
