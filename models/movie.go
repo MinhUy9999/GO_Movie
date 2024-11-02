@@ -5,11 +5,11 @@ import (
 )
 
 type Movie struct {
-	MovieID  int    `json:"movie_id"`
-	Title    string `json:"title"`
-	Genre    string `json:"genre"`
-	Duration int    `json:"duration"` // in minutes
-	Picture  string `json:"picture"`
+	MovieID  int    `json:"movie_id" form:"movie_id"`
+	Title    string `json:"title" form:"title"`
+	Genre    string `json:"genre" form:"genre"`
+	Duration int    `json:"duration" form:"duration"`
+	Picture  string `json:"picture"` // Chỉ dùng để lưu đường dẫn file
 }
 
 func CreateMovie(movie Movie) error {
@@ -61,4 +61,13 @@ func DeleteMovie(movieID int) error {
 		return err
 	}
 	return nil
+}
+func GetMovieByID(movieID int) (Movie, error) {
+	var movie Movie
+	err := config.DB.QueryRow("SELECT movieID, title, genre, duration, picture FROM MOVIE WHERE movieID = ?", movieID).
+		Scan(&movie.MovieID, &movie.Title, &movie.Genre, &movie.Duration, &movie.Picture)
+	if err != nil {
+		return movie, err
+	}
+	return movie, nil
 }

@@ -9,7 +9,26 @@ import (
 
 // Book tickets (C)
 func BookTickets(c *gin.Context) {
-	userID := c.GetInt("user_id")
+	userIDInterface, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Kiểm tra kiểu dữ liệu của userID
+	var userID int
+	switch v := userIDInterface.(type) {
+	case int:
+		userID = v
+	case uint:
+		userID = int(v)
+	case float64:
+		userID = int(v)
+	default:
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+
 	var request struct {
 		ScheduleID int   `json:"schedule_id"`
 		Seats      []int `json:"seats"`
