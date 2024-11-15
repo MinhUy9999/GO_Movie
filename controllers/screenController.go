@@ -42,6 +42,16 @@ func GetScreensByRoomID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"screens": screens})
 }
 
+// GetAllScreens fetches all screens
+func GetAllScreens(c *gin.Context) {
+	screens, err := models.GetAllScreens()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"screens": screens})
+}
+
 // Function to update an existing screen
 func UpdateScreen(c *gin.Context) {
 	screenIDStr := c.Param("id")

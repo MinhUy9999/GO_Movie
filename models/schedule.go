@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"my-app/config"
 )
 
@@ -60,7 +61,16 @@ func GetScheduleByID(id int) (Schedule, error) {
 
 // UpdateSchedule - Update a schedule
 func UpdateSchedule(schedule *Schedule) error {
-	query := "UPDATE SCHEDULE SET movieID = ?, screenID = ?, showTime = ?, availableSeats = ?, fare = ? WHERE scheduleID = ?"
+	query := `
+        UPDATE SCHEDULE
+        SET movieID = ?, screenID = ?, showTime = ?, availableSeats = ?, fare = ?
+        WHERE scheduleID = ?
+    `
+
+	// Log the values to be used in the query
+	fmt.Printf("Updating schedule with values: MovieID=%d, ScreenID=%d, ShowTime=%s, AvailableSeats=%d, Fare=%.2f, ScheduleID=%d\n",
+		schedule.MovieID, schedule.ScreenID, schedule.ShowTime, schedule.AvailableSeats, schedule.Fare, schedule.ScheduleID)
+
 	_, err := config.DB.Exec(query, schedule.MovieID, schedule.ScreenID, schedule.ShowTime, schedule.AvailableSeats, schedule.Fare, schedule.ScheduleID)
 	return err
 }

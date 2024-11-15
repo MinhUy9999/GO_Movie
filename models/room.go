@@ -41,16 +41,38 @@ func GetRoomsByTheaterID(theaterID int) ([]Room, error) {
 
 	return rooms, nil
 }
+func GetAllRooms() ([]Room, error) {
+	rows, err := config.DB.Query("SELECT roomID, theaterID, roomNumber FROM ROOM")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var rooms []Room
+	for rows.Next() {
+		var room Room
+		err := rows.Scan(&room.RoomID, &room.TheaterID, &room.RoomNumber)
+		if err != nil {
+			return nil, err
+		}
+		rooms = append(rooms, room)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return rooms, nil
+}
+
 func UpdateRoom(room Room) error {
 	_, err := config.DB.Exec(
 		"UPDATE ROOM SET theaterID = ?, roomNumber = ? WHERE roomID = ?",
 		room.TheaterID, room.RoomNumber, room.RoomID,
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
+
 func DeleteRoom(roomID int) error {
 	_, err := config.DB.Exec("DELETE FROM ROOM WHERE roomID = ?", roomID)
 	if err != nil {

@@ -39,8 +39,6 @@ func SetupRoutes(r *gin.Engine) {
 	user.Use(middlewares.JWTAuthMiddleware("user"))
 	{
 		user.GET("/profile", controllers.UserProfile)
-		user.PUT("/update/:id", controllers.UpdateUserByID)
-		user.DELETE("/delete/:id", controllers.DeleteUserByID)
 
 	}
 
@@ -50,13 +48,18 @@ func SetupRoutes(r *gin.Engine) {
 	{
 		booking.POST("/book", controllers.BookTickets)
 		booking.POST("/payment", controllers.ProcessPayment)
+		booking.GET("/bookings/:user_id", controllers.GetBookingsByUserID)
+		booking.GET("/bookings", controllers.GetAllBookings)
+		booking.DELETE("/bookings/:booking_id", controllers.DeleteBooking)
 	}
 	// Ticket management routes
 	ticket := r.Group("/tickets")
+	ticket.Use(middlewares.JWTAuthMiddleware("user", "admin"))
 	{
-		ticket.GET("/booking/:bookingID", controllers.GetTicketsByBookingIDHandler) // Lấy danh sách vé theo bookingID
-		ticket.POST("", controllers.CreateTicketHandler)                            // Tạo vé mới
+		ticket.GET("/booking/:bookingID", controllers.CreateTicketsForBookingHandler)
+		ticket.POST("/create-for-booking", controllers.CreateTicketsForBookingHandler)
 	}
+
 	// Public routes for theaters
 	theaterPublic := r.Group("/theater")
 	{
@@ -101,6 +104,9 @@ func SetupRoutes(r *gin.Engine) {
 	seatsAdmin.Use(middlewares.JWTAuthMiddleware("admin"))
 	{
 		seatsAdmin.POST("/", controllers.CreateSeat)
+		seatsAdmin.GET("/", controllers.GetAllSeats)
+		seatsAdmin.PUT("/:id", controllers.UpdateSeatHandler)
+		seatsAdmin.DELETE("/:id", controllers.DeleteSeat)
 	}
 
 	// Room management routes (Admin only)
@@ -108,6 +114,7 @@ func SetupRoutes(r *gin.Engine) {
 	{
 		// Public endpoint for getting rooms by theater ID
 		room.GET("/:theaterID", controllers.GetRoomsByTheaterID)
+		room.GET("/", controllers.GetAllRooms)
 	}
 
 	// Admin-only routes for rooms
@@ -133,6 +140,7 @@ func SetupRoutes(r *gin.Engine) {
 		screenAdmin.POST("/", controllers.CreateScreen)
 		screenAdmin.PUT("/:id", controllers.UpdateScreen)
 		screenAdmin.DELETE("/:id", controllers.DeleteScreen)
+		screenAdmin.GET("/", controllers.GetAllScreens)
 	}
 	// Chat routes
 	r.GET("/chat/messages", controllers.GetMessagesHandler) // Lấy tất cả tin nhắn
@@ -159,6 +167,8 @@ func SetupRoutes(r *gin.Engine) {
 	admin.Use(middlewares.JWTAuthMiddleware("admin"))
 	{
 		admin.GET("/users", controllers.GetAllUsers)
+		admin.PUT("/update/:id", controllers.UpdateUserByID)
+		admin.DELETE("/delete/:id", controllers.DeleteUserByID)
 	}
 
 }

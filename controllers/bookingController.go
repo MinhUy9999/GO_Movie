@@ -3,11 +3,12 @@ package controllers
 import (
 	"my-app/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Book tickets (C)
+// BookTickets books seats
 func BookTickets(c *gin.Context) {
 	userIDInterface, exists := c.Get("user_id")
 	if !exists {
@@ -15,7 +16,6 @@ func BookTickets(c *gin.Context) {
 		return
 	}
 
-	// Kiểm tra kiểu dữ liệu của userID
 	var userID int
 	switch v := userIDInterface.(type) {
 	case int:
@@ -46,4 +46,51 @@ func BookTickets(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "Booking successful", "booking_id": bookingID})
+}
+
+// GetBookingsByUserID retrieves all bookings for a given user
+func GetBookingsByUserID(c *gin.Context) {
+	userIDParam := c.Param("user_id")
+	userID, err := strconv.Atoi(userIDParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	bookings, err := models.GetBookingDetailsByUserID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "Success", "bookings": bookings})
+}
+
+// GetAllBookings retrieves all bookings
+func GetAllBookings(c *gin.Context) {
+	bookings, err := models.GetAllBookings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "Success", "bookings": bookings})
+}
+
+// DeleteBooking deletes a booking by ID
+func DeleteBooking(c *gin.Context) {
+	bookingIDParam := c.Param("booking_id")
+	bookingID, err := strconv.ParseInt(bookingIDParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid booking ID"})
+		return
+	}
+
+	err = models.DeleteBooking(bookingID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "Booking deleted successfully"})
 }

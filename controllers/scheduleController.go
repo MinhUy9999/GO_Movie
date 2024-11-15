@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -56,25 +57,42 @@ func GetScheduleByIDHandler(c *gin.Context) {
 }
 
 // UpdateScheduleHandler - Handler for updating a schedule
+// Update schedule by ID
+// UpdateScheduleHandler - Handler for updating a schedule
 func UpdateScheduleHandler(c *gin.Context) {
+	// Retrieve scheduleID from the URL parameter and convert it to an integer
+	scheduleIDStr := c.Param("id")
+	scheduleID, err := strconv.Atoi(scheduleIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
+		return
+	}
+
 	var schedule models.Schedule
 	if err := c.ShouldBindJSON(&schedule); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
 	}
 
-	if err := models.UpdateSchedule(&schedule); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update schedule"})
+	// Set the ID from the URL parameter
+	schedule.ScheduleID = scheduleID
+
+	// Log the parsed schedule data for debugging
+	fmt.Printf("Parsed schedule data: %+v\n", schedule)
+
+	// Call the model's UpdateSchedule function
+	err = models.UpdateSchedule(&schedule)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update schedule", "details": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, schedule)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Schedule updated successfully"})
 }
 
-// DeleteScheduleHandler - Delete schedule by ID
+// Delete schedule by ID
 func DeleteScheduleHandler(c *gin.Context) {
-	idStr := c.Param("id") // Get the id as a string
-
-	// Convert the string id to an integer
+	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
@@ -87,7 +105,7 @@ func DeleteScheduleHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil) // No content response for successful deletion
+	c.JSON(http.StatusOK, gin.H{"message": "Schedule deleted successfully"})
 }
 
 // GetSchedulesByScreenIDHandler - Handler for retrieving schedules by screenID
